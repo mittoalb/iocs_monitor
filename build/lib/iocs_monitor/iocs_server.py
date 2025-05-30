@@ -7,16 +7,17 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
-SCRIPTS_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "scripts"))
+#SCRIPTS_DIR = os.path.join(BASE_DIR, "scripts")
+SCRIPTS_DIR = "~/Software/sandbox/epics/iocs_monitor/iocs_monitor/scripts/"
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
-# --- IOC Configuration (script paths) ---
+# --- IOC Configuration (script name identifiers) ---
 IOCS = {
-    "32IDBSHAKER": "/net/s32dserv/xorApps/epics/synApps_6_3/ioc/32idbShaker/iocBoot/ioc32idbShaker/softioc/32idbShaker.pl",
-    "ioc32idaSoft": "/net/s32dserv/xorApps/epics/synApps_6_3/ioc/32idaSoft/iocBoot/ioc32idaSoft/softioc/32idaSoft.pl",
-    "ioc32idbSoft": "/net/s32dserv/xorApps/epics/synApps_6_3/ioc/32idbSoft/iocBoot/ioc32idbSoft/softioc/32idbSoft.pl",
-    "ioc32idcSoft": "/net/s32dserv/xorApps/epics/synApps_6_3/ioc/32idcSoft/iocBoot/ioc32idcSoft/softioc/32idcSoft.pl"
+    "32IDBSHAKER": "32idbShaker",
+    "ioc32idaSoft": "32idaSoft",
+    "ioc32idbSoft": "32idbSoft",
+    "ioc32idcSoft": "32idcSoft"
 }
 
 CGI_URL = "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
@@ -55,29 +56,33 @@ def check_status(ioc):
     except Exception as e:
         return {"status": f"error: {e}", "address": "N/A"}
 
+def run_script_for_ioc(ioc, action):
+    name = IOCS.get(ioc)
+    if not name:
+        return ("Invalid IOC", 400)
+
+    script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
+    print(script_path)
+    if not os.path.isfile(script_path):
+        return (f"Script not found: {script_path}", 404)
+
+    try:
+        subprocess.Popen([script_path, action])
+        return ('', 204)
+    except Exception as e:
+        return (f"Failed to run script: {str(e)}", 500)
+
 @app.route('/start/<ioc>', methods=['POST'])
 def start_ioc(ioc):
-    script = IOCS.get(ioc)
-    if not script:
-        return ("Invalid IOC", 400)
-    subprocess.Popen([os.path.join(SCRIPTS_DIR, "start_ioc.sh"), script])
-    return ('', 204)
+    return run_script_for_ioc(ioc, "start")
 
 @app.route('/stop/<ioc>', methods=['POST'])
 def stop_ioc(ioc):
-    script = IOCS.get(ioc)
-    if not script:
-        return ("Invalid IOC", 400)
-    subprocess.Popen([os.path.join(SCRIPTS_DIR, "stop_ioc.sh"), script])
-    return ('', 204)
+    return run_script_for_ioc(ioc, "stop")
 
 @app.route('/medm/<ioc>', methods=['POST'])
 def launch_medm(ioc):
-    script = IOCS.get(ioc)
-    if not script:
-        return ("Invalid IOC", 400)
-    subprocess.Popen([os.path.join(SCRIPTS_DIR, "launch_medm.sh"), script])
-    return ('', 204)
+    return run_script_for_ioc(ioc, "medm")
 
 def main():
     app.run(debug=True, host='0.0.0.0', port=5100)

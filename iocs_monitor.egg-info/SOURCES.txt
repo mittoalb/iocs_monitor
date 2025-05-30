@@ -1,4 +1,5 @@
 MANIFEST.in
+README.md
 pyproject.toml
 iocs_monitor/__init__.py
 iocs_monitor/iocs_server.py
