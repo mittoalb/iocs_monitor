@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iocs_monitor"
+version = "0.1.0"
+description = "Web interface for EPICS IOC management"
+authors = [{ name = "Alberto Mittone", email = "amittone@anl.gov" }]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+dependencies = [
+    "flask",
+    "requests"
+]
+[tool.setuptools]
+include-package-data = true
+
+[project.scripts]
+iom = "iocs_monitor.iocs_server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["iocs_monitor"]
+

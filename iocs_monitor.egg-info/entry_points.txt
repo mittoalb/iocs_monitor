@@ -1,0 +1,2 @@
+[console_scripts]
+iom = iocs_monitor.iocs_server:main

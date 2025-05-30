@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IOC Control Panel</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 2em;
+            background: var(--bg);
+            color: var(--fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        :root {
+            --bg: #f4f4f4;
+            --fg: #111;
+            --card-bg: #fff;
+            --border: #ccc;
+        }
+        .dark {
+            --bg: #1e1e1e;
+            --fg: #f4f4f4;
+            --card-bg: #2b2b2b;
+            --border: #444;
+        }
+        .toggle {
+            position: fixed;
+            top: 1em;
+            right: 1em;
+        }
+        h1 {
+            margin-bottom: 1em;
+        }
+        .ioc-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1em;
+        }
+        .ioc-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1em;
+            min-width: 250px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            margin: 0.25em 0.5em 0.25em 0;
+            padding: 0.5em 1em;
+            cursor: pointer;
+        }
+        .status {
+            margin-top: 0.5em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <button class="toggle" onclick="toggleDarkMode()">🌙/☀️</button>
+    <h1>IOC Control Panel</h1>
+    <div class="ioc-grid">
+        {% for name in iocs %}
+        <div class="ioc-card" id="ioc-{{ name }}">
+            <h3>{{ name }}</h3>
+            <div>
+                <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
+                <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
+                <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+            </div>
+            <div class="status" id="status-{{ name }}">Status: loading...</div>
+            <div class="status" id="address-{{ name }}">Address: loading...</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function sendCommand(ioc, action) {
+            fetch(`/${action}/${ioc}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    const statusEl = document.getElementById('status-' + ioc);
+                    const addressEl = document.getElementById('address-' + ioc);
+                    const statusText = data.status ? data.status.trim() : "unknown";
+                    const addressText = data.address || "unknown";
+
+                    statusEl.innerText = 'Status: ' + statusText;
+                    statusEl.style.color = statusText.toLowerCase().includes('up') ? 'green' : 'red';
+                    addressEl.innerText = 'Address: ' + addressText;
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('status-' + ioc).innerText = 'Status: error';
+                    document.getElementById('status-' + ioc).style.color = 'red';
+                    document.getElementById('address-' + ioc).innerText = 'Address: unknown';
+                });
+        }
+
+        function refreshAllStatuses() {
+            const iocs = {{ iocs|tojson }};
+            Object.keys(iocs).forEach(ioc => sendCommand(ioc, 'status'));
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        // Apply stored theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark');
+        }
+
+        // Initial status fetch + refresh every 5s
+        window.onload = refreshAllStatuses;
+        setInterval(refreshAllStatuses, 5000);
+    </script>
+</body>
+</html>
+

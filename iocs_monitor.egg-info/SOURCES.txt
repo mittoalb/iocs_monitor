@@ -1,0 +1,11 @@
+MANIFEST.in
+pyproject.toml
+iocs_monitor/__init__.py
+iocs_monitor/iocs_server.py
+iocs_monitor.egg-info/PKG-INFO
+iocs_monitor.egg-info/SOURCES.txt
+iocs_monitor.egg-info/dependency_links.txt
+iocs_monitor.egg-info/entry_points.txt
+iocs_monitor.egg-info/requires.txt
+iocs_monitor.egg-info/top_level.txt
+iocs_monitor/templates/index.html

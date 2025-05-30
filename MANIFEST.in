@@ -1,0 +1,11 @@
+# Include HTML templates
+recursive-include iocs_monitor/templates *.html
+
+# Include static assets (JS/CSS/images/fonts/etc.)
+# recursive-include iocs_monitor/static *
+
+# Include shell scripts if needed
+recursive-include scripts *.sh
+
+# Include README and other metadata
+include README.md
