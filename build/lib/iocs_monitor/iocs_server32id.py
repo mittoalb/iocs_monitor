@@ -5,24 +5,16 @@ import re
 import json
 import os
 
-
 # Create ssh and copy to target machine
 # Example:
 # ssh-keygen -t rsa -b 4096 -C "merlot"
 # ssh-copy-id -i ~/.ssh/id_rsa_txm4.pub usertxm@txm4
 
+
 # Load config
-
-def load_config():
-    # Resolve path to config relative to the script location
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(script_dir, "config.json")
-    
-    with open(config_path) as f:
-        return json.load(f), script_dir
-
-# Load config and base directory
-config, BASE_DIR = load_config()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, "config.json")) as f:
+    config = json.load(f)
 
 # Extract paths
 TEMPLATE_DIR = os.path.join(BASE_DIR, config["paths"]["template_dir"])

@@ -5,26 +5,41 @@ import re
 import json
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
-#SCRIPTS_DIR = os.path.join(BASE_DIR, "scripts")
-SCRIPTS_DIR = "~/Software/sandbox/epics/iocs_monitor/iocs_monitor/scripts/"
+
+# Create ssh and copy to target machine
+# Example:
+# ssh-keygen -t rsa -b 4096 -C "merlot"
+# ssh-copy-id -i ~/.ssh/id_rsa_txm4.pub usertxm@txm4
+
+# Load config
+
+def load_config():
+    # Resolve path to config relative to the script location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, "config.json")
+    
+    with open(config_path) as f:
+        return json.load(f), script_dir
+
+# Load config and base directory
+config, BASE_DIR = load_config()
+
+# Extract paths
+TEMPLATE_DIR = os.path.join(BASE_DIR, config["paths"]["template_dir"])
+SCRIPTS_DIR = config["paths"]["scripts_dir"]
+CGI_URL = config["paths"]["CGI_URL"]
+
+# Extract IOC settings
+IOCS = config["iocs"]
+VME_IOCS = set(config.get("excluded", []))
+
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
-# --- IOC Configuration (script name identifiers) ---
-IOCS = {
-    "32IDBSHAKER": "32idbShaker",
-    "ioc32idaSoft": "32idaSoft",
-    "ioc32idbSoft": "32idbSoft",
-    "ioc32idcSoft": "32idcSoft"
-}
-
-CGI_URL = "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
 
 @app.route('/')
 def index():
-    return render_template('index.html', iocs=IOCS)
+    return render_template('index.html', iocs=IOCS, excluded_iocs=VME_IOCS)
 
 def clean_js_array(js_array_str):
     js_array_str = re.sub(r'([{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', js_array_str)
@@ -64,6 +79,7 @@ def run_script_for_ioc(ioc, action):
     script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
     print(script_path)
     if not os.path.isfile(script_path):
+        print('here')
         return (f"Script not found: {script_path}", 404)
 
     try:

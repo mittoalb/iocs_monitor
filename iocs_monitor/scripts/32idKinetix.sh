@@ -2,11 +2,11 @@
 
 # --- Configuration ---
 REMOTE_USER="usertxm"
-REMOTE_HOST="txm4"
-IOC_NAME="32IDaSoft"
-BASE_DIR="/net/s32dserv/xorApps/epics/synApps_6_3/ioc"
-WORK_DIR="${BASE_DIR}/32idaSoft/iocBoot/ioc32idaSoft/softioc"
-SCRIPT_NAME="32idaSoft.pl"
+REMOTE_HOST="maxwell"
+IOC_NAME="32idKinetix"
+BASE_DIR="/home/beams/USERTXM/epics/synApps/support/ADKinetix/iocs"
+WORK_DIR="${BASE_DIR}/kinetixIOC/iocBoot/iocKinetix/softioc"
+SCRIPT_NAME="32idKinetix.pl"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
 

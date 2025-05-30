@@ -9,3 +9,4 @@ recursive-include scripts *.sh
 
 # Include README and other metadata
 include README.md
+include iocs_monitor/config.json

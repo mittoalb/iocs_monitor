@@ -3,10 +3,10 @@
 # --- Configuration ---
 REMOTE_USER="usertxm"
 REMOTE_HOST="txm4"
-IOC_NAME="32IDaSoft"
+IOC_NAME="32idbTXM"
 BASE_DIR="/net/s32dserv/xorApps/epics/synApps_6_3/ioc"
-WORK_DIR="${BASE_DIR}/32idaSoft/iocBoot/ioc32idaSoft/softioc"
-SCRIPT_NAME="32idaSoft.pl"
+WORK_DIR="${BASE_DIR}/32idbTXM/iocBoot/ioc32idbTXM/softioc"
+SCRIPT_NAME="32idbTXM.pl"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
 

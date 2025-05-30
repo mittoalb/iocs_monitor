@@ -58,15 +58,19 @@
 </head>
 <body>
     <button class="toggle" onclick="toggleDarkMode()">🌙/☀️</button>
-    <h1>IOC Control Panel</h1>
+    <h1>IOCs Control Panel</h1>
     <div class="ioc-grid">
         {% for name in iocs %}
         <div class="ioc-card" id="ioc-{{ name }}">
             <h3>{{ name }}</h3>
             <div>
-                <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
-                <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
-                <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+                {% if name not in excluded_iocs %}
+                    <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
+                    <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
+                    <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+                {% else %}
+                    <em>VME Crates IOCs</em>
+                {% endif %}
             </div>
             <div class="status" id="status-{{ name }}">Status: loading...</div>
             <div class="status" id="address-{{ name }}">Address: loading...</div>
@@ -106,15 +110,12 @@
             localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
         }
 
-        // Apply stored theme
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark');
         }
 
-        // Initial status fetch + refresh every 5s
         window.onload = refreshAllStatuses;
         setInterval(refreshAllStatuses, 5000);
     </script>
 </body>
 </html>
-

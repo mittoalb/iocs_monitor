@@ -2,11 +2,11 @@
 
 # --- Configuration ---
 REMOTE_USER="usertxm"
-REMOTE_HOST="txm4"
-IOC_NAME="32IDaSoft"
-BASE_DIR="/net/s32dserv/xorApps/epics/synApps_6_3/ioc"
-WORK_DIR="${BASE_DIR}/32idaSoft/iocBoot/ioc32idaSoft/softioc"
-SCRIPT_NAME="32idaSoft.pl"
+REMOTE_HOST="gauss"
+IOC_NAME="32idbSP1"
+BASE_DIR="/home/beams/USERTXM/epics/synApps/support"
+WORK_DIR="${BASE_DIR}/32idbSP1/iocBoot/ioc32idbSP1/softioc"
+SCRIPT_NAME="32idbSP1.sh"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
 
