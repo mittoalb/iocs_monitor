@@ -1,26 +1,28 @@
 {
-    "paths": {
-      "template_dir": "templates",
-      "scripts_dir": "/home/beams/AMITTONE/Software/sandbox/epics/iocs_monitor/iocs_monitor/scripts/",
-      "CGI_URL": "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
-    },
-    "iocs": {
-      "ioc32idbShaker": "32idbShaker",
-      "ioc32idaSoft": "32idaSoft",
-      "ioc32idbSoft": "32idbSoft",
-      "ioc32idcSoft": "32idcSoft",
-      "ioc32idbTXM": "32idbTXM",
-      "ioc32ida": "32ida",
-      "ioc32idb": "32idb",
-      "ioc32idbSP1": "32idbSP1",
-      "ioc32idbSP2": "32idbSP2",
-      "ioc32idbBPM": "32idbBPM",
-      "iocTXM": "32TXM",
-      "iocEnergyServer": "32EnergyServer"
-    },
-    "excluded": [
-      "ioc32ida",
-      "ioc32idb"
-    ]
-  }
-  
+  "paths": {
+    "template_dir": "templates",
+    "scripts_dir": "/home/beams/AMITTONE/Software/sandbox/epics/iocs_monitor/iocs_monitor/scripts/",
+    "CGI_URL": "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
+  },
+  "iocs": {
+    "ioc32idbShaker": "32idbShaker",
+    "ioc32idaSoft": "32idaSoft",
+    "ioc32idbSoft": "32idbSoft",
+    "ioc32idcSoft": "32idcSoft",
+    "ioc32idbTXM": "32idbTXM",
+    "ioc32ida": "32ida",
+    "ioc32idb": "32idb",
+    "ioc32idbSP1": "32idbSP1",
+    "ioc32idbSP2": "32idbSP2",
+    "ioc32idbBPM": "32idbBPM",
+    "iocEnergyServer": "32idEnergyServer",
+    "TXM": "32idbTXMGui",
+    "32ID-GUI": "32idGui",
+    "32ID-OptiquePeter": "32idOP"
+  },
+  "excluded": [
+    "ioc32ida",
+    "ioc32idb"
+  ],
+  "beamline_guis": ["TXM","32ID-GUI","32ID-OptiquePeter"]
+}

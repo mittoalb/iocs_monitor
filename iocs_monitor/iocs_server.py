@@ -5,41 +5,36 @@ import re
 import json
 import os
 
-
-# Create ssh and copy to target machine
-# Example:
-# ssh-keygen -t rsa -b 4096 -C "merlot"
-# ssh-copy-id -i ~/.ssh/id_rsa_txm4.pub usertxm@txm4
-
-# Load config
-
 def load_config():
-    # Resolve path to config relative to the script location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, "config.json")
-    
     with open(config_path) as f:
         return json.load(f), script_dir
 
-# Load config and base directory
+# Load config
 config, BASE_DIR = load_config()
-
-# Extract paths
 TEMPLATE_DIR = os.path.join(BASE_DIR, config["paths"]["template_dir"])
 SCRIPTS_DIR = config["paths"]["scripts_dir"]
 CGI_URL = config["paths"]["CGI_URL"]
 
-# Extract IOC settings
+# Extract IOC info
 IOCS = config["iocs"]
 VME_IOCS = set(config.get("excluded", []))
-
+BEAMLINE_GUI_NAMES = set(config.get("beamline_guis", []))
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
-
 @app.route('/')
 def index():
-    return render_template('index.html', iocs=IOCS, excluded_iocs=VME_IOCS)
+    beamline_guis = {k: v for k, v in IOCS.items() if k in BEAMLINE_GUI_NAMES}
+    other_iocs = {k: v for k, v in IOCS.items() if k not in BEAMLINE_GUI_NAMES}
+
+    return render_template(
+        'index.html',
+        iocs=other_iocs,
+        beamline_guis=beamline_guis,
+        excluded_iocs=VME_IOCS
+    )
 
 def clean_js_array(js_array_str):
     js_array_str = re.sub(r'([{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', js_array_str)
@@ -48,6 +43,9 @@ def clean_js_array(js_array_str):
 
 @app.route('/status/<ioc>', methods=['POST'])
 def check_status(ioc):
+    if ioc in BEAMLINE_GUI_NAMES:
+        return {"status": "GUI", "address": "N/A"}  # or use your own default text
+
     try:
         html = requests.get(CGI_URL, timeout=5).text
         match = re.search(r"var\s+iocs\s*=\s*(\[[\s\S]*?\])\s*;", html)
@@ -71,15 +69,14 @@ def check_status(ioc):
     except Exception as e:
         return {"status": f"error: {e}", "address": "N/A"}
 
+
 def run_script_for_ioc(ioc, action):
     name = IOCS.get(ioc)
     if not name:
         return ("Invalid IOC", 400)
 
     script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
-    print(script_path)
     if not os.path.isfile(script_path):
-        print('here')
         return (f"Script not found: {script_path}", 404)
 
     try:

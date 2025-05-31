@@ -29,7 +29,7 @@
             top: 1em;
             right: 1em;
         }
-        h1 {
+        h1, h2 {
             margin-bottom: 1em;
         }
         .ioc-grid {
@@ -59,6 +59,30 @@
 <body>
     <button class="toggle" onclick="toggleDarkMode()">🌙/☀️</button>
     <h1>IOCs Control Panel</h1>
+
+    <!-- Beamline GUIs -->
+    <h2>Beamline GUIs</h2>
+    <div class="ioc-grid">
+        {% for name in beamline_guis %}
+        <div class="ioc-card" id="ioc-{{ name }}">
+            <h3>{{ name }}</h3>
+            <div>
+                {% if name not in excluded_iocs %}
+                    <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
+                    <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
+                    <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+                {% else %}
+                    <em>VME Crates IOCs</em>
+                {% endif %}
+            </div>
+            <div class="status" id="status-{{ name }}">Status: loading...</div>
+            <div class="status" id="address-{{ name }}">Address: loading...</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Other IOCs -->
+    <h2>Beamline IOCs</h2>
     <div class="ioc-grid">
         {% for name in iocs %}
         <div class="ioc-card" id="ioc-{{ name }}">
@@ -101,7 +125,7 @@
         }
 
         function refreshAllStatuses() {
-            const iocs = {{ iocs|tojson }};
+            const iocs = Object.assign({}, {{ iocs|tojson }}, {{ beamline_guis|tojson }});
             Object.keys(iocs).forEach(ioc => sendCommand(ioc, 'status'));
         }
 
