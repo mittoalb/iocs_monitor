@@ -1,0 +1,5 @@
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+*.bak
