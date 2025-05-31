@@ -8,6 +8,7 @@ REMOTE_USER="usertxm"
 REMOTE_HOST="txm4"
 CONDA_ENV="tomoscan"
 WORK_DIR="/home/beams/USERTXM/epics/synApps/support/"
+HOME_DIR="/home/beams/USERTXM"
 
 if [[ \"${ACTION}\" == \"stop\" ]]; then
 
@@ -31,36 +32,13 @@ fi
 if [[ \"${ACTION}\" == \"start\" ]]; then
 
     #TXM optics server
-    echo "Starting txmOptics py server"
+    echo "Starting TXM control"
     gnome-terminal --tab --title "txmOptics py server" -- bash -c "
         ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
-            source ~/.bashrc; conda activate $CONDA_ENV; \
-            cd $WORK_DIR/txmoptics/iocBoot/iocTXMOptics/; \
-            python -i start_txmoptics.py;\
+            $HOME_DIR/./start_txm.sh'
             bash
         ';
     "
-    #Tomoscan server
-    echo "Starting tomoScan py server"
-    gnome-terminal --tab --title "tomoScan py server" -- bash -c "
-        ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
-            source ~/.bashrc; conda activate $CONDA_ENV; \
-            cd $WORK_DIR/tomoscan/iocBoot/iocTomoScan_32ID/; \
-            python -i start_tomoscan.py;\
-            bash
-        ';
-    "
-    echo "Starting tomoScan py server"
-    #TXMOptics UI
-    gnome-terminal --tab --title "txmOptics UI" -- bash -c "
-        ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
-            source ~/.bashrc; \
-            cd $WORK_DIR/txmoptics/iocBoot/iocTXMOptics/; \
-            ./start_medm;\
-            bash
-        ';
-    "
-
     #xterm -title "tomoScan step IOC"  -e bash -l -c "\
     #cd $WORK_DIR/tomoscan/iocBoot/iocTomoScan_32ID_STEP/; \
     #./start_IOC;\
@@ -77,8 +55,7 @@ if [[ \"${ACTION}\" == \"medm\" ]]; then
     echo "Starting TXM GUI"
     gnome-terminal --tab --title "TXM GUI" -- bash -c "
         # ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
-            cd /home/beams/USERTXM/epics/synApps/support/txmoptics/iocBoot/iocTXMOptics/;
-            ./start_medm
+            $HOME_DIR/./start_txm_gui.sh 
             bash
         # ';
     "

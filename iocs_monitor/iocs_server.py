@@ -17,7 +17,6 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, config["paths"]["template_dir"])
 SCRIPTS_DIR = config["paths"]["scripts_dir"]
 CGI_URL = config["paths"]["CGI_URL"]
 
-# Extract IOC info
 IOCS = config["iocs"]
 VME_IOCS = set(config.get("excluded", []))
 BEAMLINE_GUI_NAMES = set(config.get("beamline_guis", []))
@@ -28,7 +27,6 @@ app = Flask(__name__, template_folder=TEMPLATE_DIR)
 def index():
     beamline_guis = {k: v for k, v in IOCS.items() if k in BEAMLINE_GUI_NAMES}
     other_iocs = {k: v for k, v in IOCS.items() if k not in BEAMLINE_GUI_NAMES}
-
     return render_template(
         'index.html',
         iocs=other_iocs,
@@ -44,7 +42,7 @@ def clean_js_array(js_array_str):
 @app.route('/status/<ioc>', methods=['POST'])
 def check_status(ioc):
     if ioc in BEAMLINE_GUI_NAMES:
-        return {"status": "GUI", "address": "N/A"}  # or use your own default text
+        return {"status": "GUI", "address": "N/A"}
 
     try:
         html = requests.get(CGI_URL, timeout=5).text
@@ -59,16 +57,12 @@ def check_status(ioc):
         for entry in ioc_data:
             if entry["name"] == ioc:
                 address = ".".join(entry['address']) if isinstance(entry['address'], list) else str(entry['address'])
-                return {
-                    "status": entry["status"],
-                    "address": address
-                }
+                return {"status": entry["status"], "address": address}
 
         return {"status": "not found", "address": "N/A"}
 
     except Exception as e:
         return {"status": f"error: {e}", "address": "N/A"}
-
 
 def run_script_for_ioc(ioc, action):
     name = IOCS.get(ioc)
@@ -76,6 +70,7 @@ def run_script_for_ioc(ioc, action):
         return ("Invalid IOC", 400)
 
     script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
+    print("Executing", script_path)
     if not os.path.isfile(script_path):
         return (f"Script not found: {script_path}", 404)
 
@@ -84,6 +79,22 @@ def run_script_for_ioc(ioc, action):
         return ('', 204)
     except Exception as e:
         return (f"Failed to run script: {str(e)}", 500)
+
+@app.route('/gui/<ioc>', methods=['POST'])
+def start_gui(ioc):
+    name = IOCS.get(ioc)
+    if not name:
+        return ("Invalid GUI IOC", 400)
+
+    script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
+    if not os.path.isfile(script_path):
+        return (f"Script not found: {script_path}", 404)
+
+    try:
+        subprocess.Popen([script_path])
+        return ('', 204)
+    except Exception as e:
+        return (f"Failed to run GUI script: {str(e)}", 500)
 
 @app.route('/start/<ioc>', methods=['POST'])
 def start_ioc(ioc):

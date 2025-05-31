@@ -17,6 +17,7 @@
     "ioc32idbBPM": "32idbBPM",
     "iocEnergyServer": "32idEnergyServer",
     "TXM": "32idbTXMGui",
+    "TXMbackend": "32idbTXM_full",
     "32ID-GUI": "32idGui",
     "32ID-OptiquePeter": "32idOP"
   },

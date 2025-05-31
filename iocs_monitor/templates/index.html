@@ -60,7 +60,6 @@
     <button class="toggle" onclick="toggleDarkMode()">🌙/☀️</button>
     <h1>IOCs Control Panel</h1>
 
-    <!-- Beamline GUIs -->
     <h2>Beamline GUIs</h2>
     <div class="ioc-grid">
         {% for name in beamline_guis %}
@@ -68,20 +67,17 @@
             <h3>{{ name }}</h3>
             <div>
                 {% if name not in excluded_iocs %}
-                    <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
-                    <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
-                    <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+                    <button onclick="sendGui('{{ name }}')">Start</button>
                 {% else %}
                     <em>VME Crates IOCs</em>
                 {% endif %}
             </div>
-            <div class="status" id="status-{{ name }}">Status: loading...</div>
-            <div class="status" id="address-{{ name }}">Address: loading...</div>
+            <div class="status" id="status-{{ name }}">Status: GUI</div>
+            <div class="status" id="address-{{ name }}">Address: N/A</div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- Other IOCs -->
     <h2>Beamline IOCs</h2>
     <div class="ioc-grid">
         {% for name in iocs %}
@@ -121,6 +117,14 @@
                     document.getElementById('status-' + ioc).innerText = 'Status: error';
                     document.getElementById('status-' + ioc).style.color = 'red';
                     document.getElementById('address-' + ioc).innerText = 'Address: unknown';
+                });
+        }
+
+        function sendGui(ioc) {
+            fetch(`/gui/${ioc}`, { method: 'POST' })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to launch GUI");
                 });
         }
 
