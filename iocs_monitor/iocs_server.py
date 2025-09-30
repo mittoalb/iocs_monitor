@@ -24,8 +24,19 @@ IOCS_CATEGORIZED = {}
 for key, value in config.items():
     if key not in ["paths", "excluded", "beamline_guis"]:
         if isinstance(value, dict):
-            IOCS_FLAT.update(value)
-            IOCS_CATEGORIZED[key] = value
+            # Handle both old format (string) and new format (dict with script/description)
+            normalized_iocs = {}
+            for ioc_name, ioc_data in value.items():
+                if isinstance(ioc_data, str):
+                    # Old format: just a script name
+                    IOCS_FLAT[ioc_name] = {"script": ioc_data, "description": ""}
+                    normalized_iocs[ioc_name] = {"script": ioc_data, "description": ""}
+                else:
+                    # New format: dict with script and description
+                    IOCS_FLAT[ioc_name] = ioc_data
+                    normalized_iocs[ioc_name] = ioc_data
+            
+            IOCS_CATEGORIZED[key] = normalized_iocs
 
 VME_IOCS = set(config.get("excluded", []))
 BEAMLINE_GUI_NAMES = set(config.get("beamline_guis", []))
@@ -75,10 +86,12 @@ def check_status(ioc):
         return {"status": f"error: {e}", "address": "N/A"}
 
 def run_script_for_ioc(ioc, action):
-    name = IOCS_FLAT.get(ioc)
-    if not name:
+    ioc_data = IOCS_FLAT.get(ioc)
+    if not ioc_data:
         return ("Invalid IOC", 400)
-    script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
+    
+    script_name = ioc_data.get("script") if isinstance(ioc_data, dict) else ioc_data
+    script_path = os.path.join(SCRIPTS_DIR, f"{script_name}.sh")
     print("Executing", script_path)
     if not os.path.isfile(script_path):
         return (f"Script not found: {script_path}", 404)
@@ -90,10 +103,12 @@ def run_script_for_ioc(ioc, action):
 
 @app.route('/gui/<ioc>', methods=['POST'])
 def start_gui(ioc):
-    name = IOCS_FLAT.get(ioc)
-    if not name:
+    ioc_data = IOCS_FLAT.get(ioc)
+    if not ioc_data:
         return ("Invalid GUI IOC", 400)
-    script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
+    
+    script_name = ioc_data.get("script") if isinstance(ioc_data, dict) else ioc_data
+    script_path = os.path.join(SCRIPTS_DIR, f"{script_name}.sh")
     if not os.path.isfile(script_path):
         return (f"Script not found: {script_path}", 404)
     try:

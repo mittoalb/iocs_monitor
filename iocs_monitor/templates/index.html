@@ -17,12 +17,14 @@
             --fg: #111;
             --card-bg: #fff;
             --border: #ccc;
+            --description-color: #666;
         }
         .dark {
             --bg: #1e1e1e;
             --fg: #f4f4f4;
             --card-bg: #2b2b2b;
             --border: #444;
+            --description-color: #aaa;
         }
         .toggle {
             position: fixed;
@@ -48,6 +50,16 @@
             min-width: 250px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .ioc-card h3 {
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+        .description {
+            font-size: 0.9em;
+            color: var(--description-color);
+            margin-bottom: 0.75em;
+            font-style: italic;
+        }
         button {
             margin: 0.25em 0.5em 0.25em 0;
             padding: 0.5em 1em;
@@ -65,9 +77,12 @@
 
     <h2>Beamline GUIs</h2>
     <div class="ioc-grid">
-        {% for name in beamline_guis %}
+        {% for name, data in beamline_guis.items() %}
         <div class="ioc-card" id="ioc-{{ name }}">
             <h3>{{ name }}</h3>
+            {% if data.description %}
+            <div class="description">{{ data.description }}</div>
+            {% endif %}
             <div>
                 {% if name not in excluded_iocs %}
                     <button onclick="sendGui('{{ name }}')">Start</button>
@@ -85,9 +100,12 @@
     <div class="category-section">
         <h2>{{ category }}</h2>
         <div class="ioc-grid">
-            {% for name in iocs %}
+            {% for name, data in iocs.items() %}
             <div class="ioc-card" id="ioc-{{ name }}">
                 <h3>{{ name }}</h3>
+                {% if data.description %}
+                <div class="description">{{ data.description }}</div>
+                {% endif %}
                 <div>
                     {% if name not in excluded_iocs %}
                         <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
@@ -136,12 +154,10 @@
         }
 
         function refreshAllStatuses() {
-            // Collect all IOC names from the page
             const allCards = document.querySelectorAll('.ioc-card');
             allCards.forEach(card => {
                 const iocName = card.id.replace('ioc-', '');
                 const statusEl = document.getElementById('status-' + iocName);
-                // Only refresh status for non-GUI cards
                 if (statusEl && statusEl.innerText !== 'Status: GUI') {
                     sendCommand(iocName, 'status');
                 }
