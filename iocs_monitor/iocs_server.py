@@ -17,7 +17,16 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, config["paths"]["template_dir"])
 SCRIPTS_DIR = config["paths"]["scripts_dir"]
 CGI_URL = config["paths"]["CGI_URL"]
 
-IOCS = config["iocs"]
+# Create a flat dictionary for lookups and a categorized one for display
+IOCS_FLAT = {}
+IOCS_CATEGORIZED = {}
+
+for key, value in config.items():
+    if key not in ["paths", "excluded", "beamline_guis"]:
+        if isinstance(value, dict):
+            IOCS_FLAT.update(value)
+            IOCS_CATEGORIZED[key] = value
+
 VME_IOCS = set(config.get("excluded", []))
 BEAMLINE_GUI_NAMES = set(config.get("beamline_guis", []))
 
@@ -25,11 +34,17 @@ app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
 @app.route('/')
 def index():
-    beamline_guis = {k: v for k, v in IOCS.items() if k in BEAMLINE_GUI_NAMES}
-    other_iocs = {k: v for k, v in IOCS.items() if k not in BEAMLINE_GUI_NAMES}
+    # Separate beamline GUIs and categorize other IOCs
+    beamline_guis = {k: v for k, v in IOCS_FLAT.items() if k in BEAMLINE_GUI_NAMES}
+    
+    # Create categorized IOCs without the GUI ones
+    categorized_iocs = {}
+    for category, iocs in IOCS_CATEGORIZED.items():
+        categorized_iocs[category] = {k: v for k, v in iocs.items() if k not in BEAMLINE_GUI_NAMES}
+    
     return render_template(
         'index.html',
-        iocs=other_iocs,
+        categorized_iocs=categorized_iocs,
         beamline_guis=beamline_guis,
         excluded_iocs=VME_IOCS
     )
@@ -43,37 +58,30 @@ def clean_js_array(js_array_str):
 def check_status(ioc):
     if ioc in BEAMLINE_GUI_NAMES:
         return {"status": "GUI", "address": "N/A"}
-
     try:
         html = requests.get(CGI_URL, timeout=5).text
         match = re.search(r"var\s+iocs\s*=\s*(\[[\s\S]*?\])\s*;", html)
         if not match:
             return {"status": "unavailable", "address": "N/A"}
-
         raw_array = match.group(1)
         json_compatible = clean_js_array(raw_array)
         ioc_data = json.loads(json_compatible)
-
         for entry in ioc_data:
             if entry["name"] == ioc:
                 address = ".".join(entry['address']) if isinstance(entry['address'], list) else str(entry['address'])
                 return {"status": entry["status"], "address": address}
-
         return {"status": "not found", "address": "N/A"}
-
     except Exception as e:
         return {"status": f"error: {e}", "address": "N/A"}
 
 def run_script_for_ioc(ioc, action):
-    name = IOCS.get(ioc)
+    name = IOCS_FLAT.get(ioc)
     if not name:
         return ("Invalid IOC", 400)
-
     script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
     print("Executing", script_path)
     if not os.path.isfile(script_path):
         return (f"Script not found: {script_path}", 404)
-
     try:
         subprocess.Popen([script_path, action])
         return ('', 204)
@@ -82,14 +90,12 @@ def run_script_for_ioc(ioc, action):
 
 @app.route('/gui/<ioc>', methods=['POST'])
 def start_gui(ioc):
-    name = IOCS.get(ioc)
+    name = IOCS_FLAT.get(ioc)
     if not name:
         return ("Invalid GUI IOC", 400)
-
     script_path = os.path.join(SCRIPTS_DIR, f"{name}.sh")
     if not os.path.isfile(script_path):
         return (f"Script not found: {script_path}", 404)
-
     try:
         subprocess.Popen([script_path])
         return ('', 204)

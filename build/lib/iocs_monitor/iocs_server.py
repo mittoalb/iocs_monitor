@@ -91,10 +91,13 @@ def start_gui(ioc):
         return (f"Script not found: {script_path}", 404)
 
     try:
-        subprocess.Popen([script_path])
+        env = os.environ.copy()
+        print(f"Executing GUI script: {script_path}, DISPLAY={env['DISPLAY']}")
+        subprocess.Popen([script_path], env=env)
         return ('', 204)
     except Exception as e:
         return (f"Failed to run GUI script: {str(e)}", 500)
+
 
 @app.route('/start/<ioc>', methods=['POST'])
 def start_ioc(ioc):

@@ -1,12 +1,13 @@
 #!/bin/bash
 
+#/home/beams/USERTXM/epics/synApps/support/32idbTEMP/iocBoot/32idbTEMP
 # --- Configuration ---
 REMOTE_USER="usertxm"
-REMOTE_HOST="gauss"
-IOC_NAME="32idbSP1"
-BASE_DIR="/home/beams/USERTXM/epics/synApps/support"
-WORK_DIR="${BASE_DIR}/32idbSP1/iocBoot/ioc32idbSP1/softioc"
-SCRIPT_NAME="32idbSP1.sh"
+REMOTE_HOST="txm4"
+IOC_NAME="32idLM"
+BASE_DIR="/net/s32dserv/xorApps/epics/synApps_6_3"
+WORK_DIR="${BASE_DIR}/ioc/32idLM/iocBoot/ioc32idLM/softioc"
+SCRIPT_NAME="32idLM.pl"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
 
@@ -37,3 +38,5 @@ fi
 exec bash
 EOF
 "
+
+

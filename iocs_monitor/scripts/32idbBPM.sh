@@ -13,7 +13,7 @@ ACTION=${1:-start}
 echo "Launching $IOC_NAME on $REMOTE_HOST with action: $ACTION"
 
 $GNOME_TERMINAL --tab --title="$IOC_NAME" -- bash -c "
-ssh -t ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
+ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
 source ~/.bashrc
 cd \"${WORK_DIR}\" || exit 1
 

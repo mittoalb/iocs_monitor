@@ -5,13 +5,15 @@
     "CGI_URL": "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
   },
   "iocs": {
-    "ioc32idbShaker": "32idbShaker",
     "ioc32idaSoft": "32idaSoft",
     "ioc32idbSoft": "32idbSoft",
     "ioc32idcSoft": "32idcSoft",
-    "ioc32idbTXM": "32idbTXM",
     "ioc32ida": "32ida",
-    "ioc32idb": "32idb",
+    "ioc32idb": "32idb"
+  },
+  "TXM": {
+    "ioc32idbShaker": "32idbShaker",
+    "ioc32idbTXM": "32idbTXM",
     "ioc32idbSP1": "32idbSP1",
     "ioc32idbSP2": "32idbSP2",
     "ioc32idbBPM": "32idbBPM",
@@ -19,8 +21,15 @@
     "TXM": "32idbTXMGui",
     "TXMbackend": "32idbTXM_full",
     "32ID-GUI": "32idGui",
-    "32ID-OptiquePeter": "32idOP"
-  },
+    "ioc32idAERO": "32idAERO",
+    "ioc32idQG": "32idQG",
+    "ioc32idbTEMP": "32idbTEMP"
+  },  
+  "Projection Microscope": {
+    "ioc32Kinetix": "32idKinetix",
+    "32ID-OptiquePeter": "32idOP",
+    "ioc32idLM": "32idLM"
+  },    
   "excluded": [
     "ioc32ida",
     "ioc32idb"

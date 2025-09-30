@@ -32,6 +32,9 @@
         h1, h2 {
             margin-bottom: 1em;
         }
+        .category-section {
+            margin-bottom: 2em;
+        }
         .ioc-grid {
             display: flex;
             flex-wrap: wrap;
@@ -78,25 +81,29 @@
         {% endfor %}
     </div>
 
-    <h2>Beamline IOCs</h2>
-    <div class="ioc-grid">
-        {% for name in iocs %}
-        <div class="ioc-card" id="ioc-{{ name }}">
-            <h3>{{ name }}</h3>
-            <div>
-                {% if name not in excluded_iocs %}
-                    <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
-                    <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
-                    <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
-                {% else %}
-                    <em>VME Crates IOCs</em>
-                {% endif %}
+    {% for category, iocs in categorized_iocs.items() %}
+    <div class="category-section">
+        <h2>{{ category }}</h2>
+        <div class="ioc-grid">
+            {% for name in iocs %}
+            <div class="ioc-card" id="ioc-{{ name }}">
+                <h3>{{ name }}</h3>
+                <div>
+                    {% if name not in excluded_iocs %}
+                        <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
+                        <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
+                        <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+                    {% else %}
+                        <em>VME Crates IOCs</em>
+                    {% endif %}
+                </div>
+                <div class="status" id="status-{{ name }}">Status: loading...</div>
+                <div class="status" id="address-{{ name }}">Address: loading...</div>
             </div>
-            <div class="status" id="status-{{ name }}">Status: loading...</div>
-            <div class="status" id="address-{{ name }}">Address: loading...</div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
 
     <script>
         function sendCommand(ioc, action) {
@@ -129,8 +136,16 @@
         }
 
         function refreshAllStatuses() {
-            const iocs = Object.assign({}, {{ iocs|tojson }}, {{ beamline_guis|tojson }});
-            Object.keys(iocs).forEach(ioc => sendCommand(ioc, 'status'));
+            // Collect all IOC names from the page
+            const allCards = document.querySelectorAll('.ioc-card');
+            allCards.forEach(card => {
+                const iocName = card.id.replace('ioc-', '');
+                const statusEl = document.getElementById('status-' + iocName);
+                // Only refresh status for non-GUI cards
+                if (statusEl && statusEl.innerText !== 'Status: GUI') {
+                    sendCommand(iocName, 'status');
+                }
+            });
         }
 
         function toggleDarkMode() {

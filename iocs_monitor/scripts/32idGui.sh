@@ -7,7 +7,7 @@ REMOTE_HOST="txm4"
 
 
 gnome-terminal --tab --title "32ID Gui" -- bash -c "
-    ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
+    ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
         ./start_epics
         exec csh
     ';

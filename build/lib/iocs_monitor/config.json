@@ -2,7 +2,7 @@
   "paths": {
     "template_dir": "templates",
     "scripts_dir": "/home/beams/AMITTONE/Software/sandbox/epics/iocs_monitor/iocs_monitor/scripts/",
-    "CGI_URL": "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
+    "CGI_URL": "https://bcda.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
   },
   "iocs": {
     "ioc32idbShaker": "32idbShaker",

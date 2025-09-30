@@ -34,7 +34,7 @@ if [[ \"${ACTION}\" == \"start\" ]]; then
     #TXM optics server
     echo "Starting TXM control"
     gnome-terminal --tab --title "txmOptics py server" -- bash -c "
-        ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
+        ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
             $HOME_DIR/./start_txm.sh'
             bash
         ';
@@ -54,7 +54,7 @@ if [[ \"${ACTION}\" == \"medm\" ]]; then
 
     echo "Starting TXM GUI"
     gnome-terminal --tab --title "TXM GUI" -- bash -c "
-        # ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
+        # ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
             $HOME_DIR/./start_txm_gui.sh 
             bash
         # ';
