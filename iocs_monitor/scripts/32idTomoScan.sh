@@ -23,37 +23,37 @@ if [[ "$ACTION" == "start" ]]; then
     # Launch a single gnome-terminal with two tabs
     $GNOME_TERMINAL \
         --tab --title="$IOC_NAME IOC" -- bash -c "
-            ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
-                ~/scripts/kill_IOC.sh ${APP_NAME}
-                cd ${WORK_DIR}
-                source ${CONDA_PATH}/etc/profile.d/conda.sh
-                conda activate ${CONDA_ENV}
-                ./start_IOC
-                exec bash
-            '
+ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << EOF
+~/scripts/kill_IOC.sh ${APP_NAME}
+cd ${WORK_DIR}
+source ${CONDA_PATH}/etc/profile.d/conda.sh
+conda activate ${CONDA_ENV}
+./start_IOC
+exec bash
+EOF
         " \
         --tab --title="$IOC_NAME py server" -- bash -c "
-            sleep 2
-            ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
-                cd ${WORK_DIR}
-                ~/scripts/kill_server.sh ${SCRIPT_NAME}
-                source ${CONDA_PATH}/etc/profile.d/conda.sh
-                conda activate ${CONDA_ENV}
-                python -i ${SCRIPT_NAME}
-                exec bash
-            '
+sleep 2
+ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << EOF
+cd ${WORK_DIR}
+~/scripts/kill_server.sh ${SCRIPT_NAME}
+source ${CONDA_PATH}/etc/profile.d/conda.sh
+conda activate ${CONDA_ENV}
+python -i ${SCRIPT_NAME}
+exec bash
+EOF
         "
 
 elif [[ "$ACTION" == "stop" ]]; then
     # Stop both the IOC and Python server
     $GNOME_TERMINAL --tab --title="$IOC_NAME - Stop" -- bash -c "
-        ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
-            echo \"Stopping tomoScan IOC and Python server...\"
-            ~/scripts/kill_IOC.sh ${APP_NAME}
-            ~/scripts/kill_server.sh ${SCRIPT_NAME}
-            echo \"Done.\"
-            exec bash
-        '
+ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << EOF
+echo \"Stopping tomoScan IOC and Python server...\"
+~/scripts/kill_IOC.sh ${APP_NAME}
+~/scripts/kill_server.sh ${SCRIPT_NAME}
+echo \"Done.\"
+exec bash
+EOF
     "
 
 else
