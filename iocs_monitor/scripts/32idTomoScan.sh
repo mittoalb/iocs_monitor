@@ -12,43 +12,48 @@ CONDA_PATH="/home/beams/USERTXM/conda/anaconda/"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
 
+# Ensure DISPLAY is set for GUI applications
+if [ -z "$DISPLAY" ]; then
+    export DISPLAY=:1
+fi
+
 echo "Managing $IOC_NAME on $REMOTE_HOST with action: $ACTION"
 
 if [[ "$ACTION" == "start" ]]; then
-    # Start the EPICS IOC in one terminal
-    $GNOME_TERMINAL --tab --title="$IOC_NAME IOC" -- bash -c "
-    ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
-        ~/scripts/kill_IOC.sh ${APP_NAME}
-        cd ${WORK_DIR}
-        conda activate ${CONDA_ENV}
-        ./start_IOC;
-    ';
-    "
-
-    # Wait a moment for the IOC to start
-    sleep 1
-
-    # Start the Python server in another terminal
-    $GNOME_TERMINAL --tab --title="$IOC_NAME py server" -- bash -c "
-    ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
-        bash -l -c \"cd ${WORK_DIR} && hostname &&\
-        ~/scripts/kill_server.sh ${SCRIPT_NAME} && \
-        source ${CONDA_PATH}/etc/profile.d/conda.sh && \
-        conda activate ${CONDA_ENV} && \
-        python -i ${SCRIPT_NAME}; \"
-    '
-    "
+    # Launch a single gnome-terminal with two tabs using a single command
+    $GNOME_TERMINAL \
+        --tab --title="$IOC_NAME IOC" -- bash -c "
+            ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOFTAB1'
+            ~/scripts/kill_IOC.sh ${APP_NAME}
+            cd ${WORK_DIR}
+            source ${CONDA_PATH}/etc/profile.d/conda.sh
+            conda activate ${CONDA_ENV}
+            ./start_IOC
+            exec bash
+EOFTAB1
+        " \
+        --tab --title="$IOC_NAME py server" -- bash -c "
+            sleep 2
+            ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOFTAB2'
+            cd ${WORK_DIR}
+            ~/scripts/kill_server.sh ${SCRIPT_NAME}
+            source ${CONDA_PATH}/etc/profile.d/conda.sh
+            conda activate ${CONDA_ENV}
+            python -i ${SCRIPT_NAME}
+            exec bash
+EOFTAB2
+        "
 
 elif [[ "$ACTION" == "stop" ]]; then
     # Stop both the IOC and Python server
     $GNOME_TERMINAL --tab --title="$IOC_NAME - Stop" -- bash -c "
-    ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
+        ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
         echo \"Stopping tomoScan IOC and Python server...\"
         ~/scripts/kill_IOC.sh ${APP_NAME}
         ~/scripts/kill_server.sh ${SCRIPT_NAME}
         echo \"Done.\"
         exec bash
-    ';
+EOF
     "
 
 else
