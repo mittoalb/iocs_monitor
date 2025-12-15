@@ -88,34 +88,40 @@ def check_status(ioc):
 def run_script_for_ioc(ioc, action):
     ioc_data = IOCS_FLAT.get(ioc)
     if not ioc_data:
-        return ("Invalid IOC", 400)
-    
+        return ({"error": "Invalid IOC"}, 400)
+
     script_name = ioc_data.get("script") if isinstance(ioc_data, dict) else ioc_data
     script_path = os.path.join(SCRIPTS_DIR, f"{script_name}.sh")
     print("Executing", script_path)
     if not os.path.isfile(script_path):
-        return (f"Script not found: {script_path}", 404)
+        return ({"error": f"Script not found: {script_path}"}, 404)
     try:
-        subprocess.Popen([script_path, action])
-        return ('', 204)
+        env = os.environ.copy()
+        if 'DISPLAY' not in env:
+            env['DISPLAY'] = ':0'
+        subprocess.Popen([script_path, action], env=env, start_new_session=True)
+        return ({"status": "success", "message": f"{action} command sent"}, 200)
     except Exception as e:
-        return (f"Failed to run script: {str(e)}", 500)
+        return ({"error": f"Failed to run script: {str(e)}"}, 500)
 
 @app.route('/gui/<ioc>', methods=['POST'])
 def start_gui(ioc):
     ioc_data = IOCS_FLAT.get(ioc)
     if not ioc_data:
-        return ("Invalid GUI IOC", 400)
-    
+        return ({"error": "Invalid GUI IOC"}, 400)
+
     script_name = ioc_data.get("script") if isinstance(ioc_data, dict) else ioc_data
     script_path = os.path.join(SCRIPTS_DIR, f"{script_name}.sh")
     if not os.path.isfile(script_path):
-        return (f"Script not found: {script_path}", 404)
+        return ({"error": f"Script not found: {script_path}"}, 404)
     try:
-        subprocess.Popen([script_path])
-        return ('', 204)
+        env = os.environ.copy()
+        if 'DISPLAY' not in env:
+            env['DISPLAY'] = ':0'
+        subprocess.Popen([script_path], env=env, start_new_session=True)
+        return ({"status": "success", "message": "GUI started"}, 200)
     except Exception as e:
-        return (f"Failed to run GUI script: {str(e)}", 500)
+        return ({"error": f"Failed to run GUI script: {str(e)}"}, 500)
 
 @app.route('/start/<ioc>', methods=['POST'])
 def start_ioc(ioc):

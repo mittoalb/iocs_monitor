@@ -48,7 +48,7 @@
       "description": "Beam position monitor"
     },
     "iocEnergyServer": {
-      "script": "32idEnergyServer",
+      "script": "32EnergyServer",
       "description": "Energy control server"
     },
     "TXM": {
