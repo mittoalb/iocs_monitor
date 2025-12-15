@@ -98,7 +98,7 @@ def run_script_for_ioc(ioc, action):
     try:
         env = os.environ.copy()
         if 'DISPLAY' not in env:
-            env['DISPLAY'] = ':0'
+            env['DISPLAY'] = ':1'
         subprocess.Popen([script_path, action], env=env, start_new_session=True)
         return ({"status": "success", "message": f"{action} command sent"}, 200)
     except Exception as e:
@@ -117,7 +117,7 @@ def start_gui(ioc):
     try:
         env = os.environ.copy()
         if 'DISPLAY' not in env:
-            env['DISPLAY'] = ':0'
+            env['DISPLAY'] = ':1'
         subprocess.Popen([script_path], env=env, start_new_session=True)
         return ({"status": "success", "message": "GUI started"}, 200)
     except Exception as e:
