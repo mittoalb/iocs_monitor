@@ -17,12 +17,14 @@
             --fg: #111;
             --card-bg: #fff;
             --border: #ccc;
+            --description-color: #666;
         }
         .dark {
             --bg: #1e1e1e;
             --fg: #f4f4f4;
             --card-bg: #2b2b2b;
             --border: #444;
+            --description-color: #aaa;
         }
         .toggle {
             position: fixed;
@@ -31,6 +33,9 @@
         }
         h1, h2 {
             margin-bottom: 1em;
+        }
+        .category-section {
+            margin-bottom: 2em;
         }
         .ioc-grid {
             display: flex;
@@ -44,6 +49,16 @@
             padding: 1em;
             min-width: 250px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .ioc-card h3 {
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+        .description {
+            font-size: 0.9em;
+            color: var(--description-color);
+            margin-bottom: 0.75em;
+            font-style: italic;
         }
         button {
             margin: 0.25em 0.5em 0.25em 0;
@@ -62,9 +77,12 @@
 
     <h2>Beamline GUIs</h2>
     <div class="ioc-grid">
-        {% for name in beamline_guis %}
+        {% for name, data in beamline_guis.items() %}
         <div class="ioc-card" id="ioc-{{ name }}">
             <h3>{{ name }}</h3>
+            {% if data.description %}
+            <div class="description">{{ data.description }}</div>
+            {% endif %}
             <div>
                 {% if name not in excluded_iocs %}
                     <button onclick="sendGui('{{ name }}')">Start</button>
@@ -78,25 +96,32 @@
         {% endfor %}
     </div>
 
-    <h2>Beamline IOCs</h2>
-    <div class="ioc-grid">
-        {% for name in iocs %}
-        <div class="ioc-card" id="ioc-{{ name }}">
-            <h3>{{ name }}</h3>
-            <div>
-                {% if name not in excluded_iocs %}
-                    <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
-                    <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
-                    <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
-                {% else %}
-                    <em>VME Crates IOCs</em>
+    {% for category, iocs in categorized_iocs.items() %}
+    <div class="category-section">
+        <h2>{{ category }}</h2>
+        <div class="ioc-grid">
+            {% for name, data in iocs.items() %}
+            <div class="ioc-card" id="ioc-{{ name }}">
+                <h3>{{ name }}</h3>
+                {% if data.description %}
+                <div class="description">{{ data.description }}</div>
                 {% endif %}
+                <div>
+                    {% if name not in excluded_iocs %}
+                        <button onclick="sendCommand('{{ name }}', 'start')">Start</button>
+                        <button onclick="sendCommand('{{ name }}', 'stop')">Stop</button>
+                        <button onclick="sendCommand('{{ name }}', 'medm')">MEDM</button>
+                    {% else %}
+                        <em>VME Crates IOCs</em>
+                    {% endif %}
+                </div>
+                <div class="status" id="status-{{ name }}">Status: loading...</div>
+                <div class="status" id="address-{{ name }}">Address: loading...</div>
             </div>
-            <div class="status" id="status-{{ name }}">Status: loading...</div>
-            <div class="status" id="address-{{ name }}">Address: loading...</div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
 
     <script>
         function sendCommand(ioc, action) {
@@ -129,8 +154,14 @@
         }
 
         function refreshAllStatuses() {
-            const iocs = Object.assign({}, {{ iocs|tojson }}, {{ beamline_guis|tojson }});
-            Object.keys(iocs).forEach(ioc => sendCommand(ioc, 'status'));
+            const allCards = document.querySelectorAll('.ioc-card');
+            allCards.forEach(card => {
+                const iocName = card.id.replace('ioc-', '');
+                const statusEl = document.getElementById('status-' + iocName);
+                if (statusEl && statusEl.innerText !== 'Status: GUI') {
+                    sendCommand(iocName, 'status');
+                }
+            });
         }
 
         function toggleDarkMode() {
