@@ -74,6 +74,10 @@
     "ioc32idbTEMP": {
       "script": "32idbTEMP",
       "description": "Furnace monitoring and control"
+    },
+    "ioc32idTomoScan": {
+      "script": "32idTomoScan",
+      "description": "TomoScan IOC and Python server for tomography control"
     }
   },  
   "Projection Microscope": {
