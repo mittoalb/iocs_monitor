@@ -1,2 +1,3 @@
 [console_scripts]
 iom = iocs_monitor.iocs_server:main
+iom-cli = iocs_monitor.cli:main

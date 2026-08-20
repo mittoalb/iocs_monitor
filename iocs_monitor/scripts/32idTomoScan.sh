@@ -20,9 +20,8 @@ fi
 echo "Managing $IOC_NAME on $REMOTE_HOST with action: $ACTION"
 
 if [[ "$ACTION" == "start" ]]; then
-    # Launch a single gnome-terminal with two tabs
-    $GNOME_TERMINAL \
-        --tab --title="$IOC_NAME IOC" -- bash -c "
+    # Start IOC in first terminal
+    $GNOME_TERMINAL --tab --title="$IOC_NAME IOC" -- bash -c "
 ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << EOF
 ~/scripts/kill_IOC.sh ${APP_NAME}
 cd ${WORK_DIR}
@@ -31,9 +30,11 @@ conda activate ${CONDA_ENV}
 ./start_IOC
 exec bash
 EOF
-        " \
-        --tab --title="$IOC_NAME py server" -- bash -c "
-sleep 2
+    " &
+
+    # Wait a moment then start Python server in second terminal
+    sleep 1
+    $GNOME_TERMINAL --tab --title="$IOC_NAME py server" -- bash -c "
 ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << EOF
 cd ${WORK_DIR}
 ~/scripts/kill_server.sh ${SCRIPT_NAME}
@@ -42,7 +43,7 @@ conda activate ${CONDA_ENV}
 python -i ${SCRIPT_NAME}
 exec bash
 EOF
-        "
+    " &
 
 elif [[ "$ACTION" == "stop" ]]; then
     # Stop both the IOC and Python server
@@ -54,7 +55,7 @@ echo \"Stopping tomoScan IOC and Python server...\"
 echo \"Done.\"
 exec bash
 EOF
-    "
+    " &
 
 else
     echo "Unknown action: $ACTION"
