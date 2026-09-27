@@ -7,8 +7,11 @@ Two ways for an AI agent to drive this package:
 2. **`from iocs_monitor import headless as h`** — pure-Python API,
    no Flask, no HTTP, no server.
 
-The web server (`iom`, Flask on port 5100) is unchanged and still
-serves the browser UI — the two entry points are additive.
+The web server (`iom`, Flask on port 5100) shares the same
+config, scripts, and probe/launch logic — its `/status/<ioc>`
+route delegates to `headless.get_status(method="auto")` (direct
+SSH with CGI fallback), and its start/stop/medm/gui handlers pass
+`IOM_HEADLESS=1` to `Popen`, matching what the CLI does.
 
 ## What iocs_monitor is
 
@@ -16,8 +19,32 @@ Web + CLI control panel for EPICS IOCs at APS 32-ID. Config-driven
 (`iocs_monitor/config.json` — categorized IOCs, each mapped to a
 `.sh` script under `iocs_monitor/scripts/`). Every IOC operation is
 `subprocess.Popen([script, action])` where `action` ∈
-{`start`, `stop`, `medm`} or absent for GUI launch. Status is scraped
-from a CGI page listed in `config.json`.
+{`start`, `stop`, `medm`} or absent for GUI launch.
+
+**Status**: probed directly on the target host by default — the
+Python API SSHes to the `REMOTE_HOST` parsed from each script and
+runs whichever probe fits the script's shape:
+
+- **procServer-style** (`SCRIPT_NAME` ends in `.pl` / `.sh` — e.g.
+  `32idbTXM.pl`): `cd $WORK_DIR && ./$SCRIPT_NAME status`, look for
+  `is running`.
+- **App-process style** (`SCRIPT_NAME` is a Python file + `APP_NAME`
+  is defined — e.g. `start_tomoscan.py` + `tomoScanApp`):
+  `pgrep -f $APP_NAME` on the remote.
+
+Fall back to `--method cgi` (or `method="cgi"`) for the legacy
+CGI-scrape behavior, or `auto` to try SSH first and only scrape the
+CGI when SSH fails. Compound / GUI-wrapper scripts (e.g.
+`32idbTXM_full.sh`) fit neither probe and always return an error
+under `direct`; use `cgi` for those.
+
+**Terminal**: control scripts source `scripts/_lib.sh` and use its
+`iom_open` helper, which drops into a headless `nohup + logfile`
+mode when `gnome-terminal` is missing, has no DISPLAY, or no D-Bus
+session. The Python API always sets `IOM_HEADLESS=1` before
+`Popen`, so `iom-cli` and REST-triggered starts no longer depend
+on a working desktop session. Logs land in
+`$IOM_LOGDIR` (default `$HOME/.iocs_monitor/logs`).
 
 ## `iom-cli` — one-shot operations
 
@@ -28,9 +55,12 @@ iom-cli list --category TXM             # filter to one category
 iom-cli list --json                     # machine-readable
 iom-cli categories                      # every category name
 
-# Status (scrapes the CGI page from config)
-iom-cli status ioc32idbTXM
-iom-cli status ioc32idbSP1 --json
+# Status (SSHes to the target host by default)
+iom-cli status ioc32idbTXM                     # procServer-style probe
+iom-cli status ioc32idTomoScanStep             # pgrep-on-APP_NAME probe
+iom-cli status ioc32idbSP1 --method cgi        # legacy CGI scrape
+iom-cli status ioc32idbSP1 --method auto       # SSH, fall back to CGI
+iom-cli --json status ioc32idbSP1
 
 # Control (fires the .sh script in a detached subprocess)
 iom-cli start   ioc32idbTXM
@@ -54,7 +84,11 @@ h.list_iocs(category="TXM")             # filter
 h.list_categories()                     # every category
 
 # Status
-h.get_status("ioc32idbTXM")             # {"status": ..., "address": ...}
+h.get_status("ioc32idbTXM")                     # direct SSH probe
+h.get_status("ioc32idbTXM", method="cgi")       # legacy CGI scrape
+h.get_status("ioc32idbTXM", method="auto")      # SSH, fall back to CGI
+h.get_status_direct("ioc32idbTXM")              # explicit
+h.get_status_cgi("ioc32idbTXM")                 # explicit
 
 # Control
 h.start_ioc("ioc32idbTXM")              # {"ok": True, "script": ...}
@@ -89,13 +123,24 @@ Follow with `get_status` after a settle delay if you need to confirm.
 
 ### `get_status()` returns
 
+Every return shape now carries `host` (the target machine parsed
+from the script) and `address` (kept as an alias for
+backwards-compat with CGI callers). Common values:
+
 ```python
-{"status": "up",         "address": "164.54.102.6"}   # normal
-{"status": "down",       "address": "N/A"}             # CGI says down
-{"status": "GUI",        "address": "N/A"}             # is_gui entry
-{"status": "unavailable","address": "N/A"}             # CGI didn't parse
-{"status": "not found",  "address": "N/A"}             # IOC absent from CGI
-{"status": "error: ...", "address": "N/A"}             # network failure
+# --- direct (default) ---
+{"status": "up",              "host": "txm4",    "address": "txm4"}
+{"status": "down",            "host": "txm4",    "address": "txm4"}
+{"status": "GUI",             "host": "N/A",     "address": "N/A"}
+{"status": "unknown",         "host": "txm4",    "address": "txm4"}
+{"status": "ssh error: ...",  "host": "txm4",    "address": "txm4"}
+{"status": "error: script missing vars: ...", "host": "...", "address": "..."}
+
+# --- cgi ---
+{"status": "up",              "host": "10.54.102.11", "address": "10.54.102.11"}
+{"status": "unavailable",     "host": "N/A",     "address": "N/A"}
+{"status": "not found",       "host": "N/A",     "address": "N/A"}
+{"status": "error: ...",      "host": "N/A",     "address": "N/A"}
 ```
 
 ## When to use `iom-cli` vs. the REST API
@@ -150,12 +195,28 @@ convention — `AGENTS.md` at repo root → agent reads it as
 
 ## Common gotchas
 
-- **`DISPLAY` unset** → `_run_script` defaults to `:1`. If a script
-  launches a Qt/GTK GUI in a session with a different display, override
-  the env var in the calling shell.
-- **CGI page unreachable** → `get_status` returns `error: ...`. Not
-  a bug; just a network issue. Fall back to `caget` on a known PV
-  the IOC serves.
+- **`DISPLAY` unset** → `_run_script` defaults to `:1`, and `IOM_HEADLESS=1`
+  is always set so scripts skip `gnome-terminal` and log to
+  `$IOM_LOGDIR` (default `$HOME/.iocs_monitor/logs`). If a script
+  launches an X GUI in a session with a different display, override
+  `DISPLAY` in the calling shell.
+- **SSH auth denied** → direct status returns `ssh error: ...`.
+  Passwordless SSH from the account running `iocs_monitor` to the
+  target host must be set up (same requirement the `.sh` scripts
+  have always had). Test with
+  `ssh -o BatchMode=yes usertxm@<host> true`.
+- **CGI page unreachable** → `get_status(..., method="cgi")` returns
+  `error: ...`. Not a bug; just a network issue. Fall back to `caget`
+  on a known PV.
+- **Script metadata unparseable** → for the direct probe, the script
+  must define `REMOTE_USER`, `REMOTE_HOST`, and either
+  (`WORK_DIR` + `SCRIPT_NAME` ending in `.pl`/`.sh`) for the
+  procServer-style probe, or `APP_NAME` for the pgrep-style probe.
+  All values must be top-level `VAR="value"` assignments (a
+  one-pass `${VAR}` expansion against earlier lines is done, so
+  `WORK_DIR="${BASE_DIR}/foo"` is fine). Compound scripts (e.g.
+  `32idbTXM_full.sh`) don't fit either shape and always return an
+  error under `method="direct"`; use `method="cgi"` for those.
 - **Script not found** → the config lists an IOC whose `.sh` file is
   missing under `scripts_dir`. Fix by editing `config.json` or
   dropping the `.sh` in place.

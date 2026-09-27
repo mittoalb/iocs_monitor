@@ -4,11 +4,11 @@ source "$(dirname "$0")/_lib.sh"
 # --- Configuration ---
 REMOTE_USER="usertxm"
 REMOTE_HOST="gauss"
-IOC_NAME="tomoScan"
+IOC_NAME="txmOptics"
 CONDA_ENV="tomoscan"
-APP_NAME="tomoScanApp"
-WORK_DIR="/home/beams/USERTXM/epics/synApps/support/tomoscan/iocBoot/iocTomoScan_32ID/"
-SCRIPT_NAME="start_tomoscan.py"
+APP_NAME="txmOpticsApp"
+WORK_DIR="/home/beams/USERTXM/epics/synApps/support/txmoptics/iocBoot/iocTXMOptics/"
+SCRIPT_NAME="start_txmoptics.py"
 CONDA_PATH="/home/beams/USERTXM/conda/anaconda/"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
@@ -50,7 +50,7 @@ elif [[ "$ACTION" == "stop" ]]; then
     # Stop both the IOC and Python server
     iom_open "$IOC_NAME - Stop" "
 ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << EOF
-echo \"Stopping tomoScan IOC and Python server...\"
+echo \"Stopping ${IOC_NAME} IOC and Python server...\"
 ~/scripts/kill_IOC.sh ${APP_NAME}
 ~/scripts/kill_server.sh ${SCRIPT_NAME}
 echo \"Done.\"

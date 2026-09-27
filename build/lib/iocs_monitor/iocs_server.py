@@ -5,6 +5,8 @@ import re
 import json
 import os
 
+from . import headless
+
 def load_config():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, "config.json")
@@ -67,23 +69,19 @@ def clean_js_array(js_array_str):
 
 @app.route('/status/<ioc>', methods=['POST'])
 def check_status(ioc):
-    if ioc in BEAMLINE_GUI_NAMES:
-        return {"status": "GUI", "address": "N/A"}
-    try:
-        html = requests.get(CGI_URL, timeout=5).text
-        match = re.search(r"var\s+iocs\s*=\s*(\[[\s\S]*?\])\s*;", html)
-        if not match:
-            return {"status": "unavailable", "address": "N/A"}
-        raw_array = match.group(1)
-        json_compatible = clean_js_array(raw_array)
-        ioc_data = json.loads(json_compatible)
-        for entry in ioc_data:
-            if entry["name"] == ioc:
-                address = ".".join(entry['address']) if isinstance(entry['address'], list) else str(entry['address'])
-                return {"status": entry["status"], "address": address}
-        return {"status": "not found", "address": "N/A"}
-    except Exception as e:
-        return {"status": f"error: {e}", "address": "N/A"}
+    # Delegate to the headless probe in `auto` mode:
+    #   - Try direct SSH first (works for both procServer-style
+    #     IOCs and app-process IOCs like tomoscan via pgrep on
+    #     APP_NAME).
+    #   - If SSH fails AND the IOC is procServer-style, fall back to
+    #     the CGI scrape (which lists those).
+    #   - If SSH fails AND the IOC is app-process style (tomoscan,
+    #     txmOptics), keep the SSH error — the CGI has no record of
+    #     those and would return a misleading "not found".
+    st = headless.get_status(ioc, method="auto", timeout=6.0)
+    # Keep the response shape the frontend expects: {status, address}
+    return {"status": st.get("status", "unknown"),
+            "address": st.get("address") or st.get("host") or "N/A"}
 
 def run_script_for_ioc(ioc, action):
     ioc_data = IOCS_FLAT.get(ioc)
@@ -98,7 +96,8 @@ def run_script_for_ioc(ioc, action):
     try:
         env = os.environ.copy()
         if 'DISPLAY' not in env:
-            env['DISPLAY'] = ':0'
+            env['DISPLAY'] = ':1'
+        env.setdefault('IOM_HEADLESS', '1')
         subprocess.Popen([script_path, action], env=env, start_new_session=True)
         return ({"status": "success", "message": f"{action} command sent"}, 200)
     except Exception as e:
@@ -117,7 +116,8 @@ def start_gui(ioc):
     try:
         env = os.environ.copy()
         if 'DISPLAY' not in env:
-            env['DISPLAY'] = ':0'
+            env['DISPLAY'] = ':1'
+        env.setdefault('IOM_HEADLESS', '1')
         subprocess.Popen([script_path], env=env, start_new_session=True)
         return ({"status": "success", "message": "GUI started"}, 200)
     except Exception as e:

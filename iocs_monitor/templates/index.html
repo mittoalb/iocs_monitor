@@ -124,8 +124,8 @@
     {% endfor %}
 
     <script>
-        function sendCommand(ioc, action) {
-            fetch(`/${action}/${ioc}`, { method: 'POST' })
+        function fetchStatus(ioc) {
+            fetch(`/status/${ioc}`, { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
                     const statusEl = document.getElementById('status-' + ioc);
@@ -145,6 +145,28 @@
                 });
         }
 
+        function sendCommand(ioc, action) {
+            // Control endpoints ({start,stop,medm}) return an ack, NOT
+            // the real IOC status — never paint their response onto the
+            // status line. Instead, re-poll /status/<ioc> after short
+            // delays so the display reflects reality without waiting
+            // for the next 5s tick. The extra retries cover the case
+            // where the backing status source (CGI or SSH) is slow to
+            // pick up the change.
+            const statusEl = document.getElementById('status-' + ioc);
+            if (statusEl) {
+                statusEl.innerText = 'Status: ' + action + '…';
+                statusEl.style.color = '';
+            }
+            fetch(`/${action}/${ioc}`, { method: 'POST' })
+                .catch(err => console.error(err))
+                .finally(() => {
+                    setTimeout(() => fetchStatus(ioc), 1500);
+                    setTimeout(() => fetchStatus(ioc), 5000);
+                    setTimeout(() => fetchStatus(ioc), 12000);
+                });
+        }
+
         function sendGui(ioc) {
             fetch(`/gui/${ioc}`, { method: 'POST' })
                 .catch(err => {
@@ -159,7 +181,7 @@
                 const iocName = card.id.replace('ioc-', '');
                 const statusEl = document.getElementById('status-' + iocName);
                 if (statusEl && statusEl.innerText !== 'Status: GUI') {
-                    sendCommand(iocName, 'status');
+                    fetchStatus(iocName);
                 }
             });
         }

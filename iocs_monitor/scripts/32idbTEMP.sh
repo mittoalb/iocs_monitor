@@ -1,4 +1,5 @@
 #!/bin/bash
+source "$(dirname "$0")/_lib.sh"
 
 #/home/beams/USERTXM/epics/synApps/support/32idbTEMP/iocBoot/32idbTEMP
 # --- Configuration ---
@@ -13,7 +14,7 @@ ACTION=${1:-start}
 
 echo "Launching $IOC_NAME on $REMOTE_HOST with action: $ACTION"
 
-$GNOME_TERMINAL --tab --title="$IOC_NAME" -- bash -c "
+iom_open "$IOC_NAME" "
 ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
 source ~/.bashrc
 cd \"${WORK_DIR}\" || exit 1
