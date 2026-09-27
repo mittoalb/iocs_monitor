@@ -1,4 +1,5 @@
 #!/bin/bash
+source "$(dirname "$0")/_lib.sh"
 
 # --- Configuration ---
 REMOTE_USER="usertxm"
@@ -12,8 +13,8 @@ ACTION=${1:-start}
 
 echo "Launching $IOC_NAME on $REMOTE_HOST with action: $ACTION"
 
-$GNOME_TERMINAL --tab --title="$IOC_NAME" -- bash -c "
-ssh -t ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
+iom_open "$IOC_NAME" "
+ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
 source ~/.bashrc
 cd \"${WORK_DIR}\" || exit 1
 

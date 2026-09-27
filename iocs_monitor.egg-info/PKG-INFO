@@ -11,106 +11,260 @@ Requires-Dist: requests
 
 # IOC Control Panel
 
-A simple web-based control panel to manage EPICS IOCs and GUIs via SSH scripts. The application allows you to start, stop, and launch MEDM for selected IOCs and Beamline GUIs, as well as view live status where applicable.
+Web + CLI + Python control panel for EPICS IOCs at APS 32-ID. Start,
+stop, launch MEDM, and monitor status for every IOC defined in
+`config.json` — from a browser, from `iom-cli` in a shell, or from
+`from iocs_monitor import headless as h` in Python.
 
 ## Features
 
-- Start, stop, and launch MEDM interfaces for IOCs
-- Group support for Beamline GUIs vs other IOCs
-- Periodic live status refresh using CGI page scraping
-- Optional dark mode toggle
-- Configurable via a single `config.json` file
+- **Three entry points, one config**: browser UI (`iom`, Flask on
+  port 5100), CLI (`iom-cli`), and headless Python API — all share
+  the same `.sh` scripts and `config.json`.
+- **Direct-SSH status probe**: instead of scraping a stale CGI page,
+  the panel SSHes to the target host parsed from each script and
+  asks the IOC itself. Two probe styles are recognized automatically
+  — a classic `./script.pl status` for procServer-style IOCs, and a
+  `pgrep -f APP_NAME` for tomoscan-style Python-launched IOCs.
+- **Terminal-optional launcher**: control scripts source a shared
+  `_lib.sh` and use `iom_open`, which falls back to
+  `nohup … > logfile 2>&1 &` when `gnome-terminal`, `DISPLAY`, or
+  D-Bus aren't available. `iom-cli` and REST-triggered starts no
+  longer die because a terminal couldn't be spawned.
+- **Categorical browser UI**: IOCs grouped by category (TXM,
+  Projection Microscope, etc.) with a separate Beamline GUIs pane.
+- **Live status**: 5 s periodic poll plus a re-poll burst
+  (1.5 s / 5 s / 12 s) after every Start / Stop / MEDM click so the
+  page reflects reality as soon as the change lands.
+- **Dark mode**: toggle with persistence in `localStorage`.
 
 ## Requirements
 
-- Python 3.6+
-- Flask
-- curl or wget for CGI status page (accessed via requests)
+- Python 3.8+
+- `flask`, `requests` (installed via `pip install -e .`)
+- Passwordless SSH from the account that runs `iocs_monitor` to
+  every `REMOTE_HOST` listed in the control scripts (same
+  requirement the scripts have always had).
 
 ## Installation
 
-1. Clone this repository or copy the files to your target host:
-
 ```bash
-git clone https://your-git-repo/ioc-control-panel.git
-cd ioc-control-panel
+git clone https://github.com/mittoalb/iocs_monitor.git
+cd iocs_monitor
+pip install -e .
 ```
 
-2. Install Python dependencies:
+This installs both entry points on the current `$PATH`:
 
-```bash
-pip install flask requests
-```
+- `iom` — Flask web server (`http://localhost:5100/`)
+- `iom-cli` — argparse CLI, described below
 
-3. Configure the application:
+## Configuration
 
-Edit the `config.json` file:
+Edit `iocs_monitor/config.json` to match your setup:
 
 ```json
 {
   "paths": {
     "template_dir": "templates",
-    "scripts_dir": "/absolute/path/to/ioc/scripts",
-    "CGI_URL": "http://yourhost/cgi-bin/ioc_alive.cgi"
+    "scripts_dir": "/absolute/path/to/iocs_monitor/scripts/",
+    "CGI_URL": "https://yourbeamline.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
   },
-  "iocs": {
-    "iocExample1": "script1",
-    "iocTXM": "32TXM"
+  "TXM": {
+    "ioc32idbTXM": {
+      "script": "32idbTXM",
+      "description": "Main TXM control IOC"
+    },
+    "ioc32idTomoScan": {
+      "script": "32idTomoScan",
+      "description": "TomoScan IOC and Python server for tomography control"
+    },
+    "ioc32idTomoScanStep": {
+      "script": "32idTomoScanStep",
+      "description": "TomoScan step-scan IOC + Python server"
+    },
+    "TXM": {
+      "script": "32idbTXMGui",
+      "description": "TXM graphical user interface"
+    }
   },
-  "excluded": [
-    "iocExample1"
-  ],
-  "beamline_guis": ["iocTXM"]
+  "Projection Microscope": {
+    "ioc32Kinetix": {
+      "script": "32idKinetix",
+      "description": "Kinetix camera control"
+    }
+  },
+  "excluded":       ["ioc32ida", "ioc32idb"],
+  "beamline_guis":  ["TXM", "32ID-GUI"]
 }
 ```
 
-- `iocs` maps IOC names to script names (used to run `script_name.sh start|stop|medm`)
-- `excluded` lists IOCs that should not have control buttons
-- `beamline_guis` lists IOCs to group in a separate section (e.g., TXM GUIs)
+### Keys
+
+- **`paths.scripts_dir`** — absolute path to the `.sh` scripts.
+  Every `script` value below is resolved relative to this.
+- **`paths.CGI_URL`** — legacy CGI page. Used only when status is
+  requested with `method="cgi"` (or `method="auto"` falls back to
+  it).
+- **`paths.template_dir`** — Flask templates (server-only).
+- **`excluded`** — IOC names shown but with no control buttons
+  (VME crates).
+- **`beamline_guis`** — IOC names displayed in the "Beamline GUIs"
+  pane, with a single Start button and no status probe.
+- Any other top-level dict becomes a **category**. Each of its
+  entries is `{"script": "<name>", "description": "..."}`, where
+  `<name>` matches a file `<scripts_dir>/<name>.sh`.
 
 ## Usage
 
-Start the server with:
+### Web UI
 
 ```bash
-python iocs_server.py
+iom                                 # binds 0.0.0.0:5100
 ```
 
-Then open a browser and go to:
+Open `http://localhost:5100/` and use the buttons. Status refreshes
+every 5 s automatically; a click on Start / Stop / MEDM re-polls
+at 1.5 s / 5 s / 12 s after the click so the display catches up
+even if the backing status source is slow.
 
+### CLI
+
+```bash
+# Discovery
+iom-cli list                        # every IOC + category + script
+iom-cli list --category TXM         # filter to one category
+iom-cli --json list                 # machine-readable
+iom-cli categories
+
+# Status — direct SSH probe by default
+iom-cli status ioc32idbTXM
+iom-cli status ioc32idbTXM --method cgi     # legacy CGI scrape
+iom-cli status ioc32idbTXM --method auto    # SSH, fall back to CGI
+iom-cli --json status ioc32idbTXM
+
+# Control
+iom-cli start   ioc32idbTXM
+iom-cli stop    ioc32idbTXM
+iom-cli restart ioc32idbTXM         # stop then start
+iom-cli medm    ioc32idbTXM
+iom-cli gui     TXMbackend          # GUI-style entry, no action arg
 ```
-http://localhost:5100
+
+Nonzero exit on failure so shell chains behave.
+
+### Python
+
+```python
+from iocs_monitor import headless as h
+
+h.list_iocs()                                   # every IOC
+h.list_iocs(category="TXM")                     # filter
+
+h.get_status("ioc32idbTXM")                     # direct SSH probe
+h.get_status("ioc32idbTXM", method="cgi")       # legacy CGI scrape
+h.get_status("ioc32idbTXM", method="auto")      # SSH → CGI fallback
+
+h.start_ioc("ioc32idbTXM")                      # fire the script
+h.stop_ioc("ioc32idbTXM")
+h.restart_ioc("ioc32idbTXM")
+h.medm("ioc32idbTXM")
+h.start_gui("TXMbackend")
 ```
+
+Every function returns a dict — see `iocs_monitor/headless.py`
+for the exact shapes.
 
 ## File Structure
 
 ```
 iocs_monitor/
-├── iocs_server.py       # Main Flask server
-├── config.json          # Configuration for IOC names and paths
+├── iocs_server.py       # Flask server (entry point `iom`)
+├── cli.py               # argparse CLI (entry point `iom-cli`)
+├── headless.py          # pure-Python API
+├── config.json          # IOC + category + path configuration
 ├── templates/
-│   └── index.html       # Web UI layout and JS
-├── scripts/
-│   └── *.sh             # IOC control scripts (must support start/stop/medm)
+│   └── index.html       # browser UI
+└── scripts/
+    ├── _lib.sh          # shared iom_open helper (sourced by all)
+    └── *.sh             # per-IOC control scripts
 ```
 
-## Script Requirements
+## Script requirements
 
-Each IOC script must accept one of the following as its first argument:
+Every control script must:
 
-```bash
-./your_script.sh start
-./your_script.sh stop
-./your_script.sh medm
-```
+1. Source the shared helper on line 2:
+   ```bash
+   #!/bin/bash
+   source "$(dirname "$0")/_lib.sh"
+   ```
+2. Define its remote context as top-level `VAR="value"` lines so
+   the status probe can parse them:
+   ```bash
+   REMOTE_USER="usertxm"
+   REMOTE_HOST="txm4"
+   WORK_DIR="/net/…/ioc32idbTXM/softioc"
+   SCRIPT_NAME="32idbTXM.pl"      # procServer style
+   # or:
+   APP_NAME="tomoScanApp"          # app-process style (with Python SCRIPT_NAME)
+   ```
+3. Accept `{start, stop, medm}` as `$1` (GUI-style scripts take
+   no arg). Spawn any long-running processes via `iom_open`, not
+   raw `gnome-terminal`:
+   ```bash
+   iom_open "$IOC_NAME" "
+       ssh -Y $REMOTE_USER@$REMOTE_HOST bash << 'EOF'
+       …
+       EOF
+   "
+   ```
 
-The server will call these via `subprocess.Popen`.
+`iom_open` chooses between `gnome-terminal --tab` (when a real
+desktop session is present) and `nohup … > logfile 2>&1 &` (when
+not), so the script always makes progress. Logs land in
+`$IOM_LOGDIR` (default `~/.iocs_monitor/logs/`). The Python API
+sets `IOM_HEADLESS=1` before `Popen`, forcing the fallback path
+for CLI- and REST-triggered starts.
+
+## Status probe
+
+- **procServer-style** (`SCRIPT_NAME` ends in `.pl` / `.sh`):
+  `cd $WORK_DIR && ./$SCRIPT_NAME status`, grep for `is running` /
+  `is not running`.
+- **App-process style** (Python `SCRIPT_NAME` + `APP_NAME`):
+  `pgrep -f $APP_NAME` on the remote.
+- **Beamline GUI entries**: always return `"GUI"`, no probe.
+- **CGI fallback**: pass `method="cgi"` to reuse the legacy scrape
+  of `paths.CGI_URL`.
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `Status: ssh error: … Permission denied …` | Passwordless SSH from the current account to `REMOTE_HOST` isn't set up. Test with `ssh -o BatchMode=yes usertxm@<host> true`. Or use `--method cgi` / `--method auto`. |
+| `Status: unknown` on a Python-launched IOC | The script's `APP_NAME` doesn't match the actual binary. Check with `pgrep -a <APP_NAME>` on the remote and adjust the script. |
+| `Status: error: script not found` | `paths.scripts_dir` is wrong or the file is missing under it. |
+| `Status: error: no status probe …` | The script is a compound / GUI wrapper — it doesn't fit either probe. Use `--method cgi` for it, or split it into simpler per-IOC scripts. |
+| Starting an IOC does nothing, no terminal appears | Expected in a headless session — check the log under `~/.iocs_monitor/logs/` for the actual remote output. |
+| Browser shows `Status: success` after clicking Stop | Old cached template. Hard-reload (Ctrl-Shift-R). |
+| `iom` runs but imports fail with `No module named 'iocs_monitor'` | A stale `~/.local/bin/iom` shim is shadowing the fresh install. `rm ~/.local/bin/iom` and start a new shell, or run the full path `~/…/envs/<env>/bin/iom`. |
 
 ## Notes
 
-- Beamline GUI entries (e.g., `iocTXM`) are not checked for status via the CGI — they return "GUI" or "N/A" as status.
-- The IOC status is parsed from a CGI page that must return a `var iocs = [...]` JavaScript variable.
+- **Do NOT SSH to the IOC hosts and start things manually.** The
+  `.sh` scripts encode kill-order, conda-env activation, and
+  `screen`/tab naming that the operator workflow expects.
+- **Do NOT hand-edit `config.json` casually.** Every `script` value
+  must match a file at `<scripts_dir>/<name>.sh`.
+- `Popen` returns as soon as the shell script has been dispatched
+  — that's not the same as the IOC being up. Wait a few seconds
+  and query `get_status` if you need confirmation.
 
 ## License
 
+MIT License
 
+## Contributing
+
+Contributions welcome — please open a PR.

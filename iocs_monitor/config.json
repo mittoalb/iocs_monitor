@@ -1,26 +1,111 @@
 {
   "paths": {
     "template_dir": "templates",
-    "scripts_dir": "/home/beams/AMITTONE/Software/sandbox/epics/iocs_monitor/iocs_monitor/scripts/",
+    "scripts_dir": "/home/beams/AMITTONE/Software/iocs_monitor/iocs_monitor/scripts/",
     "CGI_URL": "https://7id.xray.aps.anl.gov/cgi-bin/ioc_alive.cgi"
   },
   "iocs": {
-    "ioc32idbShaker": "32idbShaker",
-    "ioc32idaSoft": "32idaSoft",
-    "ioc32idbSoft": "32idbSoft",
-    "ioc32idcSoft": "32idcSoft",
-    "ioc32idbTXM": "32idbTXM",
-    "ioc32ida": "32ida",
-    "ioc32idb": "32idb",
-    "ioc32idbSP1": "32idbSP1",
-    "ioc32idbSP2": "32idbSP2",
-    "ioc32idbBPM": "32idbBPM",
-    "iocEnergyServer": "32idEnergyServer",
-    "TXM": "32idbTXMGui",
-    "TXMbackend": "32idbTXM_full",
-    "32ID-GUI": "32idGui",
-    "32ID-OptiquePeter": "32idOP"
+    "ioc32idaSoft": {
+      "script": "32idaSoft",
+      "description": "32-ID-A Soft IOC for general control"
+    },
+    "ioc32idbSoft": {
+      "script": "32idbSoft",
+      "description": "32-ID-B Soft IOC for general control"
+    },
+    "ioc32idcSoft": {
+      "script": "32idcSoft",
+      "description": "32-ID-C Soft IOC for general control"
+    },
+    "ioc32ida": {
+      "script": "32ida",
+      "description": "VME Crate IOC for 32-ID-A"
+    },
+    "ioc32idb": {
+      "script": "32idb",
+      "description": "VME Crate IOC for 32-ID-B"
+    }
   },
+  "TXM": {
+    "ioc32idbShaker": {
+      "script": "32idbShaker",
+      "description": "Shaker motor control for sample positioning"
+    },
+    "ioc32idbTXM": {
+      "script": "32idbTXM",
+      "description": "Main TXM control IOC"
+    },
+    "ioc32idbSP1": {
+      "script": "32idbSP1",
+      "description": "Teledyne ORYX"
+    },
+    "ioc32idbSP2": {
+      "script": "32idbSP2",
+      "description": "Blackfly camera"
+    },
+    "ioc32idbBPM": {
+      "script": "32idbBPM",
+      "description": "Beam position monitor"
+    },
+    "iocEnergyServer": {
+      "script": "32EnergyServer",
+      "description": "Energy control server"
+    },
+    "TXM": {
+      "script": "32idbTXMGui",
+      "description": "TXM graphical user interface"
+    },
+    "TXMbackend": {
+      "script": "32idbTXM_full",
+      "description": "TXM backend with full functionality"
+    },
+    "32ID-GUI": {
+      "script": "32idGui",
+      "description": "Main 32-ID control GUI"
+    },
+    "ioc32idAERO": {
+      "script": "32idAERO",
+      "description": "Aerotech motion control"
+    },
+    "ioc32idQG": {
+      "script": "32idQG",
+      "description": "QueensGate"
+    },
+    "ioc32idbTEMP": {
+      "script": "32idbTEMP",
+      "description": "Furnace monitoring and control"
+    },
+    "ioc32idTomoScan": {
+      "script": "32idTomoScan",
+      "description": "TomoScan IOC and Python server for tomography control"
+    },
+    "ioc32idTomoScanStep": {
+      "script": "32idTomoScanStep",
+      "description": "TomoScan step-scan IOC + Python server (iocTomoScan_32ID_STEP on gauss)"
+    },
+    "ioc32idTomoScanFly": {
+      "script": "32idTomoScanFly",
+      "description": "TomoScan fly-scan IOC + Python server (iocTomoScan_32ID_FLY on gauss)"
+    },
+    "ioc32idTXMOptics": {
+      "script": "32idTXMOptics",
+      "description": "TXM optics IOC + Python server (iocTXMOptics on gauss)"
+    }
+  },
+  "Projection Microscope": {
+    "ioc32Kinetix": {
+      "script": "32idKinetix",
+      "description": "Kinetix camera control"
+    },
+    "32ID-OptiquePeter": {
+      "script": "32idOP",
+      "description": "Optique Peter microscope GUI"
+    },
+    "ioc32idLM": {
+      "script": "32idLM",
+      "description": "Lab Motion control"
+    }
+  },    
   "excluded": [
     "ioc32ida",
     "ioc32idb"

@@ -1,19 +1,20 @@
 #!/bin/bash
+source "$(dirname "$0")/_lib.sh"
 
 # --- Configuration ---
 REMOTE_USER="usertxm"
 REMOTE_HOST="txm4"
-IOC_NAME="32IDbSoft"
+IOC_NAME="32idAERO"
 BASE_DIR="/net/s32dserv/xorApps/epics/synApps_6_3/ioc"
-WORK_DIR="${BASE_DIR}/32idbSoft/iocBoot/ioc32idbSoft/softioc"
-SCRIPT_NAME="32idbSoft.pl"
+WORK_DIR="${BASE_DIR}/32idAERO/iocBoot/ioc32idAERO/softioc"
+SCRIPT_NAME="32idAERO.pl"
 GNOME_TERMINAL="gnome-terminal"
 ACTION=${1:-start}
 
 echo "Launching $IOC_NAME on $REMOTE_HOST with action: $ACTION"
 
-$GNOME_TERMINAL --tab --title="$IOC_NAME" -- bash -c "
-ssh -t ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
+iom_open "$IOC_NAME" "
+ssh -Y ${REMOTE_USER}@${REMOTE_HOST} bash << 'EOF'
 source ~/.bashrc
 cd \"${WORK_DIR}\" || exit 1
 

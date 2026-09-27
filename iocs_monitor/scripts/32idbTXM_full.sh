@@ -1,4 +1,5 @@
 #!/bin/bash
+source "$(dirname "$0")/_lib.sh"
 ACTION=${1:-start}
 
 
@@ -12,7 +13,7 @@ HOME_DIR="/home/beams/USERTXM"
 
 if [[ \"${ACTION}\" == \"stop\" ]]; then
 
-    gnome-terminal --tab --title "txmOptics IOC" -- bash -c "
+    iom_open "txmOptics IOC" "
         ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
             cd $WORK_DIR/txmoptics/iocBoot/iocTXMOptics/; \
             pkill -9 txmOpticsApp; \
@@ -20,7 +21,7 @@ if [[ \"${ACTION}\" == \"stop\" ]]; then
             bash
         ';
     "
-    gnome-terminal --tab --title "tomoScan IOC" -- bash -c "
+    iom_open "tomoScan IOC" "
         ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
             cd $WORK_DIR/tomoscan/iocBoot/iocTomoScan_32ID/; \
             pkill -9 tomoScanApp; \
@@ -33,8 +34,8 @@ if [[ \"${ACTION}\" == \"start\" ]]; then
 
     #TXM optics server
     echo "Starting TXM control"
-    gnome-terminal --tab --title "txmOptics py server" -- bash -c "
-        ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
+    iom_open "txmOptics py server" "
+        ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
             $HOME_DIR/./start_txm.sh'
             bash
         ';
@@ -53,8 +54,8 @@ fi
 if [[ \"${ACTION}\" == \"medm\" ]]; then
 
     echo "Starting TXM GUI"
-    gnome-terminal --tab --title "TXM GUI" -- bash -c "
-        # ssh -t ${REMOTE_USER}@${REMOTE_HOST} '
+    iom_open "TXM GUI" "
+        # ssh -Y ${REMOTE_USER}@${REMOTE_HOST} '
             $HOME_DIR/./start_txm_gui.sh 
             bash
         # ';
