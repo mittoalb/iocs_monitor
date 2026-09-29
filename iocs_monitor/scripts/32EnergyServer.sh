@@ -9,6 +9,11 @@ REMOTE_USER="usertxm"
 REMOTE_HOST="txm4"
 CONDA_ENV="tomoscan"
 SCRIPT_NAME="start_energy.py"
+# APP_NAME is used by iocs_monitor's status probe (pgrep -f) — must
+# match the running process command line. `python -i start_energy.py`
+# shows as `.../python -i start_energy.py`, so `start_energy.py` is
+# a reliable substring.
+APP_NAME="start_energy.py"
 WORK_DIR="/home/beams/USERTXM/epics/synApps/support/energy/iocBoot/iocEnergy_32ID/"
 
 # Open a new tab in gnome-terminal, SSH into tomdet, activate conda, and run Python (without login shell)

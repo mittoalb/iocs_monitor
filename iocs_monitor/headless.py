@@ -206,7 +206,17 @@ def _ssh_run(user: str, host: str, remote_cmd: str,
              timeout: float = 8.0) -> Tuple[int, str, str]:
     """Run `remote_cmd` on `user@host` via SSH. Returns
     `(returncode, stdout, stderr)`. `returncode == -1` for network
-    or timeout failures (stderr carries the reason)."""
+    or timeout failures (stderr carries the reason).
+
+    The remote command is always dispatched through `bash -l -c …`
+    for two reasons:
+      1. The remote account's login shell may be csh/tcsh (common
+         on old EPICS setups); bash-specific syntax such as `if …;
+         then …; fi` would fail otherwise.
+      2. `-l` sources the login profile so EPICS env vars
+         (`EPICS_BASE`, `PATH`, `LD_LIBRARY_PATH`) are set — many
+         `./<ioc>.pl status` scripts assume that."""
+    wrapped = f"bash -l -c {shlex.quote(remote_cmd)}"
     ssh_args = [
         "ssh",
         "-o", "BatchMode=yes",
@@ -214,7 +224,7 @@ def _ssh_run(user: str, host: str, remote_cmd: str,
         "-o", "StrictHostKeyChecking=accept-new",
         "-o", "ServerAliveInterval=3",
         f"{user}@{host}",
-        remote_cmd,
+        wrapped,
     ]
     try:
         proc = subprocess.run(
